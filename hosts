@@ -1,0 +1,32 @@
+localhost ansible_python_interpreter=/home/vinic/.local/share/virtualenvs/vsphere-lab-exercise-playbooks--T6WTHCU/bin/python
+dnsmasq01
+
+[vcenter]
+localhost
+
+[vcenter:vars]
+vcenter_username=administrator@vsphere.local
+vcenter_password=VMware1!
+vcenter_hostname=vcenter.vsphere.lab
+validate_certs=false
+datacenter=LAB
+vm_folder=/LAB/vm/USER_VMS
+template=template-linux-base
+cluster=CLS_LAB
+datastore=DSC_LAB
+portgroup=dpgDb
+dns_server=172.16.100.11
+
+[dns]
+dnsmasq01
+
+[postgres]
+# VMs to be created
+
+[linux:vars]
+ansible_ssh_user=root
+ansible_ssh_pass=VMware1!
+
+[linux:children]
+dns
+postgres

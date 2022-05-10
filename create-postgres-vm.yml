@@ -1,0 +1,102 @@
+---
+# creates VMs on vCenter Server
+- name: Creates PostgreSQL VMs
+  hosts: vcenter
+  connection: local
+  gather_facts: true
+
+  collections:
+    - community.vmware
+
+  tasks:
+
+    - name: Creates postgres VM in {{ cluster }}
+      community.vmware.vmware_guest:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: "{{ validate_certs }}"
+        datacenter: "{{ datacenter }}"
+        state: present
+        folder: "{{ vm_folder }}"
+        template: "{{ template }}"
+        name: "{{ item.name }}"
+        cluster: "{{ cluster }}"
+        datastore: "{{ datastore }}"
+        hardware:
+          num_cpus: 2
+          memory_mb: 4096
+        networks:
+          - name: "{{ portgroup }}"
+            ip: "{{ item.ip }}"
+            netmask: "{{ item.netmask }}"
+            gateway: "{{ item.gateway }}"
+        wait_for_ip_address: True
+        wait_for_ip_address_timeout: 600
+        customization:
+          dns_servers: "{{ dns_server }}"
+          hostname: "{{ item.name }}"
+      delegate_to: localhost
+      with_items: "{{ postgres_vms }}"
+
+- name: Adds VMs into inventory
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  tasks: 
+    - name: Add VMs into postgres inventory group
+      add_host:
+        name: "{{ item.ip }}"
+        groups: postgres
+      with_items: "{{ postgres_vms }}"
+
+# updates DNS
+- name: Updates DNS
+  hosts: dns
+  gather_facts: true
+
+  tasks:
+    - name: adds DNS A record
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item.ip }} {{ item.name }}"
+      with_items: "{{ postgres_vms }}"
+      notify: restart dnsmasq
+
+  handlers: 
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted
+        enabled: yes
+
+# install Postgres
+- name: Install PostgreSQL
+  hosts: postgres
+  gather_facts: true
+
+  tasks:
+    - name: Install postgresql
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items: 
+        - postgresql
+        - postgresql-server
+    
+    - name: Checks if postgre database is initiated
+      stat:
+        path: /var/lib/pgsql/data/pg_hba.conf
+      register: postgres_data
+
+    - name: Initialize PostgreSQL
+      shell: postgresql-setup initdb
+      when: not postgres_data.stat.exists
+ 
+    - name: Start and enable services
+      service: 
+        name: postgresql 
+        state: started 
+        enabled: yes
+      

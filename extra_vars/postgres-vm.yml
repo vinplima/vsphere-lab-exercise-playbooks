@@ -1,0 +1,11 @@
+---
+postgres_vms:
+  - name: vm-pgsql-001
+    ip: 172.16.206.21
+    netmask: 255.255.255.0
+    gateway: 172.16.206.1
+  - name: vm-pgsql-002
+    ip: 172.16.206.22
+    netmask: 255.255.255.0
+    gateway: 172.16.206.1
+  
