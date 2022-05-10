@@ -1,4 +1,4 @@
-localhost ansible_python_interpreter=/home/vinic/.local/share/virtualenvs/vsphere-lab-exercise-playbooks--T6WTHCU/bin/python
+localhost
 dnsmasq01
 
 [vcenter]
